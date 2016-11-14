@@ -1,0 +1,67 @@
+/*
+  DHT11 Test-Sketch mit der DHTLib
+
+  Ein kleines Beispiel zum Umgang mit dem DHT11 Temperatur- und Luftfeuchtigkeits-Sensor
+
+  https://usysto.net/12-volt-frostwaechter-mit-arduino_390
+*/
+
+#include <dht.h>      // Bibliothek einbinden
+dht DHT;              // Eine Instanz der Klasse DHT11 initialisieren
+
+const int dhtPin = 4; // Der Digitale Pin 4 wird mit dem Sensor verbunden
+int       data;       // Datenspeicher
+
+void setup() {
+
+  // Den seriellen Port öffnen mit 9600 bps
+  // Mehr unter https://www.arduino.cc/en/Reference/Serial
+  Serial.begin(9600);
+}
+
+void loop() {
+
+  // Den DHT11 Sensor auslesen.
+  // Anschliessend die Ausgabe der Daten.
+  // Den Seriellen Monitor der IDE starten
+  // um mitzulesen
+
+  data = DHT.read11(dhtPin);
+  Serial.print("Temperatur: ");
+  Serial.print(DHT.temperature, 1);
+  Serial.print(" °C");
+  Serial.print("  /  ");
+  Serial.print("Luftfeuchtigkeit: ");
+  Serial.print(DHT.humidity, 1);
+  Serial.print(" %");
+  Serial.print("  /  ");
+  Serial.print("Taupunkttemperatur: ");
+  Serial.print(dewPoint(DHT.temperature, DHT.humidity), 2);
+  Serial.print(" °C");
+  Serial.println();
+
+  delay(2000);
+}
+
+/*
+  dewPoint function NOAA http://playground.arduino.cc/Main/DHT11Lib
+  reference (1) : http://wahiduddin.net/calc/density_algorithms.htm
+  reference (2) : http://www.colorado.edu/geography/weather_station/Geog_site/about.htm
+*/
+double dewPoint(double celsius, double humidity)
+{
+  // (1) Saturation Vapor Pressure = ESGG(T)
+  double RATIO = 373.15 / (273.15 + celsius);
+  double RHS = -7.90298 * (RATIO - 1);
+  RHS += 5.02808 * log10(RATIO);
+  RHS += -1.3816e-7 * (pow(10, (11.344 * (1 - 1 / RATIO ))) - 1) ;
+  RHS += 8.1328e-3 * (pow(10, (-3.49149 * (RATIO - 1))) - 1) ;
+  RHS += log10(1013.246);
+
+  // factor -3 is to adjust units - Vapor Pressure SVP * humidity
+  double VP = pow(10, RHS - 3) * humidity;
+
+  // (2) DEWPOINT = F(Vapor Pressure)
+  double T = log(VP / 0.61078); // temp var
+  return (241.88 * T) / (17.558 - T);
+}
